@@ -1,0 +1,228 @@
+---
+title: "Coral_Nursery_Amplicons"
+author: "J. Meyer"
+date: "2025-05-01"
+output: html_document
+---
+
+```{r, echo=FALSE}
+library(dada2)
+library(phyloseq)
+library(CoDaSeq)
+library(vegan)
+library(pairwiseAdonis)
+library(corncob)
+library(ggplot2)
+library(knitr)
+library(dplyr)
+library(reshape2)
+library(tibble)
+writeLines(capture.output(sessionInfo()), "sessionInfo.txt")
+```
+
+## Quality-filter the sequencing reads and create Amplicon Sequence Variant (ASV) table with DADA2
+
+Put unjoined R1 and R2 fastq files, with adaptors and primers previously removed with cutadapt into a directory for DADA2. Here, our forward and reverse fastq filenames have format: SAMPLENAME_R1_cut.fastq.gz and SAMPLENAME_R2_cut.fastq.gz
+
+
+```{r, echo=FALSE}
+path <- "~/Documents/Coral_Nursery_CNAT_DLAB/Coral_Nursery_cutadapt"
+list.files(path)
+fnFs <- sort(list.files(path, pattern="_R1_cut.fastq.gz", full.names = TRUE))
+fnRs <- sort(list.files(path, pattern="_R2_cut.fastq.gz", full.names = TRUE))
+sample.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
+# Perform filtering and trimming
+filt_path <- file.path(path, "filtered") 
+filtFs <- file.path(filt_path, paste0(sample.names, "_F_filt.fastq.gz"))
+filtRs <- file.path(filt_path, paste0(sample.names, "_R_filt.fastq.gz"))
+out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, truncLen=c(150,150),
+                     maxN=0, maxEE=c(2,2), truncQ=2, rm.phix=TRUE,
+                     compress=TRUE, multithread=TRUE)
+head(out)
+# Learn the Error Rates, it TAKES TIME!
+errF <- learnErrors(filtFs, multithread=TRUE)
+errR <- learnErrors(filtRs, multithread=TRUE)
+plotErrors(errF, nominalQ=TRUE)
+# Dereplicate the filtered fastq files
+derepFs <- derepFastq(filtFs, verbose=TRUE)
+derepRs <- derepFastq(filtRs, verbose=TRUE)
+names(derepFs) <- sample.names
+names(derepRs) <- sample.names
+# Infer the sequence variants in each sample
+dadaFs <- dada(derepFs, err=errF, multithread=TRUE)
+dadaRs <- dada(derepRs, err=errR, multithread=TRUE)
+# Inspecting the dada-class object returned by dada:
+dadaFs[[1]]
+# Merge the denoised forward and reverse reads:
+mergers <- mergePairs(dadaFs, derepFs, dadaRs, derepRs, verbose=TRUE)
+# Inspect the merger data.frame from the first sample
+head(mergers[[1]])
+# Construct sequence table
+seqtab <- makeSequenceTable(mergers)
+dim(seqtab)
+# Inspect distribution of sequence lengths
+table(nchar(getSequences(seqtab)))
+#Remove chimeric sequences:
+seqtab.nochim <- removeBimeraDenovo(seqtab, method="consensus", multithread=TRUE, verbose=TRUE)
+dim(seqtab.nochim)
+sum(seqtab.nochim)/sum(seqtab) # proportion of non-chimeric taxa
+#Track reads through the pipeline
+getN <- function(x) sum(getUniques(x))
+track <- cbind(out, sapply(dadaFs, getN), sapply(mergers, getN), rowSums(seqtab.nochim))
+colnames(track) <- c("input", "filtered", "denoised", "merged", "nonchim")
+rownames(track) <- sample.names
+head(track)
+write.table(track, "dada_read_stats.txt",sep="\t",col.names=NA)
+saveRDS(seqtab.nochim, "~/Documents/Coral_Nursery_CNAT_DLAB/seqtab.nochim.rds")
+```
+
+
+## Data quality check
+I inspected the dada_read_stats.txt file and have 18 biological samples that had fewer than 500 reads after quality filtering, denoising, merging, and removal of chimeras. I will merge the dada_read_stats file add the number of non-chimeric reads to the metadata table for downstream filtering of those samples. (Phyloseq does not allow subsetting by sample name, only by sample metadata.)
+
+
+```{r, echo=FALSE}
+dada<-read.table("dada_read_stats.txt",sep="\t",header=TRUE)
+names(dada)[1]<-"sample"
+meta<-read.table("metadata.txt",sep="\t",header=TRUE)
+meta_dada<-merge(meta,dada,by="sample")
+write.table(meta_dada, "metadata.txt",sep="\t",col.names=NA)
+# I had to manually remove the first column of rownumbers before using in phyloseq
+```
+
+
+## Assign taxonomy in DADA2
+
+Make sure the taxonomy reference database is in your working directory. Keep the database file gzipped. Adjust path name below. This step is very time consuming.
+
+When taxonomy assignment is complete, we will use base R and phyloseq to clean up the taxonomy table. First, we will replace NAs and empty cells with the lowest taxonomy classification available. Second, we will use phyloseq to remove reads that are classified as Eukaryotes or unclassified at the domain level (ie, we are keeping only Bacteria and Archaea because that is what our primers target).
+
+```{r, echo=FALSE}
+taxa <- assignTaxonomy(seqtab.nochim, "~/Documents/silva_nr99_v138.2_toGenus_trainset.fa.gz", multithread=TRUE)
+# FIX the NAs in the taxa table
+taxon <- as.data.frame(taxa,stringsAsFactors=FALSE)
+taxon$Phylum[is.na(taxon$Phylum)] <- taxon$Kingdom[is.na(taxon$Phylum)]
+taxon$Class[is.na(taxon$Class)] <- taxon$Phylum[is.na(taxon$Class)]
+taxon$Order[is.na(taxon$Order)] <- taxon$Class[is.na(taxon$Order)]
+taxon$Family[is.na(taxon$Family)] <- taxon$Order[is.na(taxon$Family)]
+taxon$Genus[is.na(taxon$Genus)] <- taxon$Family[is.na(taxon$Genus)]
+write.table(taxon,"silva_taxa_table.txt",sep="\t",col.names=NA)
+write.table(seqtab.nochim, "silva_otu_table.txt",sep="\t",col.names=NA)
+```
+
+
+## Load data into phyloseq
+
+```{r, echo=FALSE}
+# Create phyloseq object from otu and taxonomy tables from dada2, along with the sample metadata.
+otu <- read.table("silva_otu_table.txt",sep="\t",header=TRUE, row.names=1)
+taxon <- read.table("silva_taxa_table.txt",sep="\t",header=TRUE,row.names=1)
+samples<-read.table("metadata.txt",sep="\t",header=T,row.names=1)
+OTU = otu_table(otu, taxa_are_rows=FALSE)
+taxon<-as.matrix(taxon)
+TAX = tax_table(taxon)
+sampledata = sample_data(samples)
+ps <- phyloseq(otu_table(otu, taxa_are_rows=FALSE), 
+               sample_data(samples), 
+               tax_table(taxon))
+ps # 2313 taxa and 184 samples
+```
+
+## Remove chloroplasts, mitochondria, and eukaryotes
+
+```{r, echo=FALSE}
+# remove chloroplasts and mitochondria and Eukaryota
+get_taxa_unique(ps, "Family") #321
+get_taxa_unique(ps, "Order") #195
+get_taxa_unique(ps, "Kingdom") #3
+ps <- subset_taxa(ps, Family !="Mitochondria")
+ps <- subset_taxa(ps, Order !="Chloroplast")
+ps <- subset_taxa(ps, Kingdom !="Eukaryota")
+ps <- subset_taxa(ps, Kingdom !="NA")
+get_taxa_unique(ps, "Family") #318
+get_taxa_unique(ps, "Order") #193
+get_taxa_unique(ps, "Kingdom") #2
+ps
+# 2064 taxa and 184 samples
+```
+
+## Export tables for future reference
+
+```{r, echo=FALSE}
+# Now export cleaned otu and taxa tables from phyloseq for future reference
+otu = as(otu_table(ps), "matrix")
+taxon = as(tax_table(ps), "matrix")
+metadata = as(sample_data(ps), "matrix")
+write.table(otu,"silva_nochloronomito_otu_table.txt",sep="\t",col.names=NA)
+write.table(taxon,"silva_nochloronomito_taxa_table.txt",sep="\t",col.names=NA)
+```
+
+## Explore data from nochloronomito tables
+
+Now, time to explore the data. First, I will remove the blanks and save the phyloseq object and tables without the blanks. Then, I will remove low abundance reads.
+
+```{r, echo=FALSE}
+# read data in, if needed
+otu <- read.table("silva_nochloronomito_otu_table.txt",sep="\t",header=TRUE, row.names=1)
+taxon <- read.table("silva_nochloronomito_taxa_table.txt",sep="\t",header=TRUE,row.names=1)
+samples<-read.table("metadata.txt",sep="\t",header=T,row.names=1)
+OTU = otu_table(otu, taxa_are_rows=FALSE)
+taxon<-as.matrix(taxon)
+TAX = tax_table(taxon)
+sampledata = sample_data(samples)
+ps <- phyloseq(otu_table(otu, taxa_are_rows=FALSE), 
+               sample_data(samples), 
+               tax_table(taxon))
+
+ps # 2064 taxa and 184 samples
+
+# Remove sample blanks
+psnb = subset_samples(ps, colony != "blank")
+psnb # 2064 taxa and 180 samples
+
+# Remove experimental samples with fewer than 500 nonchimeric reads
+ps_qf = subset_samples(psnb, nonchim > 500)
+ps_qf # 2064 taxa and 162 samples; 18 samples removed
+
+# remove any empty rows
+ps_qf <- prune_taxa(taxa_sums(ps_qf) > 1, ps_qf) 
+ps_qf # 2032 taxa and 162 samples, 32 taxa removed
+
+# export ASVs in blanks
+ps_blanks = subset_samples(ps, colony == "blank")
+ps_blanks <- prune_taxa(taxa_sums(ps_blanks) > 1, ps_blanks)
+ps_blanks #6 taxa and 4 samples
+get_taxa_unique(ps_blanks, "Genus")
+# [1] "Bradyrhizobium"   "Ralstonia"        "Cloacibacterium"  "Pseudomonas"      "Actinotalea"      "Methylobacterium"
+otu_ps_blanks = as(otu_table(ps_blanks), "matrix")
+taxon_ps_blanks = as(tax_table(ps_blanks), "matrix")
+write.table(otu_ps_blanks,"silva_nochloronomito_otu_table_blanks.txt",sep="\t",col.names=NA)
+write.table(taxon_ps_blanks,"silva_nochloronomito_taxa_table_blanks.txt",sep="\t",col.names=NA)
+
+# export tables with blanks and samples with fewer than 500 reads removed
+otu_ps = as(otu_table(ps_qf), "matrix")
+taxon_ps = as(tax_table(ps_qf), "matrix")
+metadata_ps = as(sample_data(ps_qf), "matrix")
+write.table(otu_ps,"silva_nochloronomito_otu_table_qf.txt",sep="\t",col.names=NA)
+write.table(taxon_ps,"silva_nochloronomito_taxa_table_qf.txt",sep="\t",col.names=NA)
+write.table(metadata_ps,"metadata_qf.txt",sep="\t",col.names=NA)
+
+# export relative abundances
+ps_ra<-transform_sample_counts(ps_qf, function(OTU) OTU/sum(OTU))
+otu_ps_ra = as(otu_table(ps_ra), "matrix")
+write.table(otu_ps_ra,"silva_nochloronomito_otu_table_RA.txt",sep="\t",col.names=NA)
+
+#explore data
+ntaxa(ps_qf) # 2032
+get_taxa_unique(ps_qf, "Order") # 191
+get_taxa_unique(ps_qf, "Class") # 89
+
+ps5<-filter_taxa(ps_qf, function(x) mean(x) >5, TRUE)
+ntaxa(ps5) # 38
+
+ps2<-filter_taxa(ps_qf, function(x) mean(x) >2, TRUE)
+ntaxa(ps2) # 89
+
+
+
+```
