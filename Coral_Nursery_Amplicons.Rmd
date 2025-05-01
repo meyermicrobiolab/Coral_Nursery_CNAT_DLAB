@@ -222,7 +222,20 @@ ntaxa(ps5) # 38
 
 ps2<-filter_taxa(ps_qf, function(x) mean(x) >2, TRUE)
 ntaxa(ps2) # 89
+get_taxa_unique(ps2, "Order") # 33
+get_taxa_unique(ps2, "Class") # 14
+get_taxa_unique(ps2, "Genus") # 60
 
-
+# Export files with low abundance taxa removed
+otu_ps2 = as(otu_table(ps2), "matrix")
+taxon_ps2 = as(tax_table(ps2), "matrix")
+metadata_ps2 = as(sample_data(ps2), "matrix")
+write.table(otu_ps2,"silva_nochloronomito_otu_table_ps2.txt",sep="\t",col.names=NA)
+write.table(taxon_ps2,"silva_nochloronomito_taxa_table_ps2.txt",sep="\t",col.names=NA)
+write.table(metadata_ps2,"metadata_ps2.txt",sep="\t",col.names=NA)
+# also write out ASV table with relative abundance
+ps2_ra<-transform_sample_counts(ps2, function(OTU) OTU/sum(OTU))
+otu_ps2_ra = as(otu_table(ps2_ra), "matrix")
+write.table(otu_ps2_ra,"silva_nochloronomito_otu_table_ps2_RA.txt",sep="\t",col.names=NA)
 
 ```
