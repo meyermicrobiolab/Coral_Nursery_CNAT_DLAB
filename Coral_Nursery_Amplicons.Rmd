@@ -244,7 +244,7 @@ write.table(otu_ps2_ra,"silva_nochloronomito_otu_table_ps2_RA.txt",sep="\t",col.
 ```
 
 
-Stacked bar charts
+## Stacked bar charts
 
 ```{r, echo=FALSE}
 # load in data and create phyloseq object
@@ -258,12 +258,15 @@ sampledata = sample_data(samples)
 ps2_ra <- phyloseq(otu_table(otu, taxa_are_rows=FALSE), 
                sample_data(samples), 
                tax_table(taxon))
-ps2_ra # 89 taxa and 162 samples
+ps2_ra # 89 taxa and 152 samples
+# removed 10 samples (7 CNAT, 3 DLAB that only have counts that were mitochondria or chloroplasts - ie. no bacterial reads) from otu table and metadata table, when you convert to relative abundance it puts "NA" into OTU table; samples show up on x-axis but have stacked bar
+# CNAT samples removed: CN041-1, CN041-3, CN042-1, CN042-2, CN042-3, CN043-2, CN043-3
+# DLAB samples removed: DL047-2, DL055-2, DL056-1
 
 get_taxa_unique(ps2_ra, "Class") # 14 classes
 get_taxa_unique(ps2_ra, "Order") # 33 orders
 get_taxa_unique(ps2_ra, "Family") # 46 families
-get_taxa_unique(ps2_ra, "Genus") # 60 generaget_taxa_unique(ps2_ra, "Family") # 46
+get_taxa_unique(ps2_ra, "Genus") # 60 genera
 
 # Plot orders
 # generate high-contrast color combinations
@@ -273,45 +276,168 @@ palette <- distinctColorPalette(n)
 
 # subset coral species to generate separate plots
 ps2_cnat = subset_samples(ps2_ra, coral.species == "Colpophyllia natans")
-ps2_cnat  # 89 taxa and 82 samples
+ps2_cnat  # 89 taxa and 75 samples
 sample_data(ps2_cnat)$timepoint<-factor(sample_data(ps2_cnat)$timepoint,levels=c("Initial","2-month"))
 
 ps2_dlab = subset_samples(ps2_ra, coral.species == "Diploria labyrinthiformis")
-ps2_dlab  # 89 taxa and 80 samples
+ps2_dlab  # 89 taxa and 77 samples
 sample_data(ps2_dlab)$timepoint<-factor(sample_data(ps2_dlab)$timepoint,levels=c("Initial","2-month"))
 
-p1=plot_bar(ps2_cnat, "colony", fill="Order")+
+# look at individual colonies
+p1a=plot_bar(ps2_cnat, fill="Order")+
   facet_grid(.~timepoint,scales="free",space="free")+
   geom_bar(aes(fill=Order), stat="identity",position="stack")+
   theme_bw()+
   theme(strip.text=element_text(face="bold", size=12))+
-  theme(axis.text.x=element_text(size=12))+
+  theme(axis.text.x=element_text(size=12,angle=90,vjust=0.5))+
   theme(axis.text.y=element_text(size=12))+
   scale_fill_manual(values=palette)+
   #theme(axis.title.x = element_blank())+
   theme(legend.position = "bottom")
-p1
+p1a
 
-# CNAT colony 42 does not have any initial samples that passed QC
-
-p2=plot_bar(ps2_dlab, "colony", fill="Order")+
+# look at individual colonies
+p2a=plot_bar(ps2_dlab, fill="Order")+
   facet_grid(.~timepoint,scales="free",space="free")+
   geom_bar(aes(fill=Order), stat="identity",position="stack")+
   theme_bw()+
   theme(strip.text=element_text(face="bold", size=12))+
-  theme(axis.text.x=element_text(size=12))+
+  theme(axis.text.x=element_text(size=12,angle=90,vjust=0.5))+
   theme(axis.text.y=element_text(size=12))+
   scale_fill_manual(values=palette)+
   #theme(axis.title.x = element_blank())+
   theme(legend.position = "bottom")
-p2
+p2a
 
 
-#pdf("barchart_Order.pdf",width=11)
-p3<-plot_grid(p1+theme(legend.position="none"),p2,align = 'vh',nrow=2)
-p3
+# Plot families
+get_taxa_unique(ps2_ra, "Family") # 46 families
+# generate high-contrast color combinations
+n <- 46
+# after plotting, you can re-run the next line to create a different selection of colors
+palette2 <- distinctColorPalette(n)
 
-#dev.off()
+pdf("barchart_Family_CNAT.pdf",width=11)
+p1a=plot_bar(ps2_cnat, fill="Family")+
+  facet_grid(.~timepoint,scales="free",space="free")+
+  geom_bar(aes(fill=Family), stat="identity",position="stack")+
+  theme_bw()+
+  theme(strip.text=element_text(face="bold", size=12))+
+  theme(axis.text.x=element_text(size=10,angle=90,vjust=0.5))+
+  theme(axis.text.y=element_text(size=12))+
+  scale_fill_manual(values=palette2)+
+  theme(axis.title.x = element_blank())+
+  theme(legend.position = "bottom")
+p1a
+dev.off()
+
+pdf("barchart_Family_DLAB.pdf",width=11)
+p2a=plot_bar(ps2_dlab, fill="Family")+
+  facet_grid(.~timepoint,scales="free",space="free")+
+  geom_bar(aes(fill=Family), stat="identity",position="stack")+
+  theme_bw()+
+  theme(strip.text=element_text(face="bold", size=12))+
+  theme(axis.text.x=element_text(size=10,angle=90,vjust=0.5))+
+  theme(axis.text.y=element_text(size=12))+
+  scale_fill_manual(values=palette2)+
+  theme(axis.title.x = element_blank())+
+  theme(legend.position = "bottom")
+p2a
+dev.off()
+
+
+```
+
+
+## Bubble Plot of most abundant taxa
+
+```{r, echo=FALSE}
+# load in data and create phyloseq object
+otu <- read.table("silva_nochloronomito_otu_table_ps2_RA.txt",sep="\t",header=TRUE, row.names=1)
+taxon <- read.table("silva_nochloronomito_taxa_table_ps2.txt",sep="\t",header=TRUE,row.names=1)
+samples<-read.table("metadata_ps2.txt",sep="\t",header=T,row.names=1)
+OTU = otu_table(otu, taxa_are_rows=FALSE)
+taxon<-as.matrix(taxon)
+TAX = tax_table(taxon)
+sampledata = sample_data(samples)
+ps2_ra <- phyloseq(otu_table(otu, taxa_are_rows=FALSE), 
+               sample_data(samples), 
+               tax_table(taxon))
+ps2_ra # 89 taxa and 152 samples
+get_taxa_unique(ps2_ra, "Family") # 46 families
+
+# Plotting most abundant families - first collapse ASVs into families then reshape data for plotting
+ps2_ra_f = tax_glom(ps2_ra, "Family")
+ps2_ra_f # 46 families and 152 samples
+otu_f = as(otu_table(ps2_ra_f), "matrix")
+taxon_f = as(tax_table(ps2_ra_f), "matrix")
+fam<-t(otu_f)
+fam <- as.data.frame(fam)
+fam <- tibble::rownames_to_column(fam, "ASV")
+taxon_f <- as.data.frame(taxon_f)
+taxon_f <- tibble::rownames_to_column(taxon_f, "ASV")
+fam_tax <- merge(fam, taxon_f, by="ASV", all=TRUE)
+fam_tax$Genus<-NULL
+fam_tax$ASV<-NULL
+# Order by total relative abundance and choose top 25 families
+fam_tax <- fam_tax %>% mutate("total" = rowSums((fam_tax[,1:152]), na.rm = TRUE))  
+fam_tax <- fam_tax[order(fam_tax$total, decreasing = TRUE),]
+fam25 <- fam_tax[1:25,]
+fam25$total<-NULL
+fam_long<-melt(fam25,value.name="proportion",variable.name="sample",id.vars=c("Kingdom","Phylum","Class","Order","Family"))
+# Merge with metadata for plotting aesthetics
+samples <- as.data.frame(samples)
+samples <- tibble::rownames_to_column(samples, "sample")
+famplot <- merge(fam_long,samples,by="sample", all=TRUE)
+
+# set aesthetics
+famplot$timepoint<-factor(famplot$timepoint,levels=c("Initial","2-month"))
+# manually sort families by relative abundance, list order: first in list = bottom of y-axis  
+famplot$Family<-factor(famplot$Family,levels=c("Bacteroidia","Burkholderiaceae","Rhodospirillaceae","Paraspirulinaceae","AB1","Alphaproteobacteria","Kiloniellaceae","Bacteria","Fusibacteraceae","Woeseiaceae","Endozoicomonadaceae","Desulfocapsaceae","Desulfovibrionaceae","Nitrosopumilaceae","Cyanobacteriaceae","Phormidiaceae","Campylobacterales","Hyphomonadaceae","Flavobacteriaceae","Blastocatellaceae","Paracoccaceae","Terasakiellaceae","Vibrionaceae","Amoebophilaceae","Ga0077536"))
+
+# heatmap with ggplot, both coral species together
+p <- ggplot(famplot, aes(sample, Family, fill= proportion)) + geom_tile()+
+  facet_grid(.~timepoint,scales="free",space="free")+
+  theme(axis.text.x=element_text(angle=90))+
+  #theme(axis.text.y=element_text(face="italic"))+
+  theme(axis.title.x=element_blank())+
+  theme(axis.title.y=element_blank())+
+  scale_fill_gradient(low="white", high="#004488")
+p
+
+# separate by coral species
+famplotC <- famplot %>% filter(coral.species =='Colpophyllia natans')
+famplotD <- famplot %>% filter(coral.species =='Diploria labyrinthiformis')
+
+# set aesthetics for each coral species
+famplotC$timepoint<-factor(famplotC$timepoint,levels=c("Initial","2-month"))
+famplotC$Family<-factor(famplotC$Family,levels=c("Bacteroidia","Burkholderiaceae","Rhodospirillaceae","Paraspirulinaceae","AB1","Alphaproteobacteria","Kiloniellaceae","Bacteria","Fusibacteraceae","Woeseiaceae","Endozoicomonadaceae","Desulfocapsaceae","Desulfovibrionaceae","Nitrosopumilaceae","Cyanobacteriaceae","Phormidiaceae","Campylobacterales","Hyphomonadaceae","Flavobacteriaceae","Blastocatellaceae","Paracoccaceae","Terasakiellaceae","Vibrionaceae","Amoebophilaceae","Ga0077536"))
+
+famplotD$timepoint<-factor(famplotD$timepoint,levels=c("Initial","2-month"))
+famplotD$Family<-factor(famplotD$Family,levels=c("Bacteroidia","Burkholderiaceae","Rhodospirillaceae","Paraspirulinaceae","AB1","Alphaproteobacteria","Kiloniellaceae","Bacteria","Fusibacteraceae","Woeseiaceae","Endozoicomonadaceae","Desulfocapsaceae","Desulfovibrionaceae","Nitrosopumilaceae","Cyanobacteriaceae","Phormidiaceae","Campylobacterales","Hyphomonadaceae","Flavobacteriaceae","Blastocatellaceae","Paracoccaceae","Terasakiellaceae","Vibrionaceae","Amoebophilaceae","Ga0077536"))
+
+pdf("Top25families_CNAT.pdf", bg ="white", width=8.5)
+pc <- ggplot(famplotC, aes(sample, Family, fill= proportion)) + geom_tile()+
+  facet_grid(.~timepoint,scales="free",space="free")+
+  theme(axis.text.x=element_text(angle=90))+
+  #theme(axis.text.y=element_text(face="italic"))+
+  theme(axis.title.x=element_blank())+
+  theme(axis.title.y=element_blank())+
+  scale_fill_gradient(low="white", high="#004488")
+pc
+dev.off()
+
+pdf("Top25families_DLAB.pdf", bg ="white", width=8.5)
+pd <- ggplot(famplotD, aes(sample, Family, fill= proportion)) + geom_tile()+
+  facet_grid(.~timepoint,scales="free",space="free")+
+  theme(axis.text.x=element_text(angle=90))+
+  #theme(axis.text.y=element_text(face="italic"))+
+  theme(axis.title.x=element_blank())+
+  theme(axis.title.y=element_blank())+
+  scale_fill_gradient(low="white", high="#004488")
+pd
+dev.off()
+
 ```
 
 

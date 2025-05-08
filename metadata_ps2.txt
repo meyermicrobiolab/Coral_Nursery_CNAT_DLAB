@@ -55,21 +55,14 @@ CN038-3	CN038	Initial	Looe Key Inshore	Colpophyllia natans	11365	6544	1581	1243	
 CN038-4	CN038	2-month	Looe Key Inshore	Colpophyllia natans	24501	13654	12903	11408	11408
 CN038-5	CN038	2-month	Looe Key Inshore	Colpophyllia natans	16465	9920	9431	8611	8611
 CN038-6	CN038	2-month	Looe Key Inshore	Colpophyllia natans	15570	8887	8314	7597	7597
-CN041-1	CN041	Initial	Pickles Patch	Colpophyllia natans	8483	4511	4430	4419	4419
 CN041-2	CN041	Initial	Pickles Patch	Colpophyllia natans	11624	6195	5575	764	764
-CN041-3	CN041	Initial	Pickles Patch	Colpophyllia natans	9157	5683	5613	5600	5600
 CN041-4	CN041	2-month	Pickles Patch	Colpophyllia natans	14858	9171	8377	2763	2759
 CN041-5	CN041	2-month	Pickles Patch	Colpophyllia natans	22245	12324	11937	11480	11480
 CN041-6	CN041	2-month	Pickles Patch	Colpophyllia natans	27955	16063	14882	2045	2045
-CN042-1	CN042	Initial	Pickles Patch	Colpophyllia natans	11534	5173	5102	5087	5087
-CN042-2	CN042	Initial	Pickles Patch	Colpophyllia natans	8538	4673	4617	4611	4611
-CN042-3	CN042	Initial	Pickles Patch	Colpophyllia natans	7125	3411	3372	3372	3372
 CN042-4	CN042	2-month	Pickles Patch	Colpophyllia natans	15919	9622	9194	8815	8815
 CN042-5	CN042	2-month	Pickles Patch	Colpophyllia natans	18519	9978	9545	1912	1912
 CN042-6	CN042	2-month	Pickles Patch	Colpophyllia natans	17107	10577	9987	8725	8725
 CN043-1	CN043	Initial	Pickles Patch	Colpophyllia natans	16972	9461	9330	9296	9296
-CN043-2	CN043	Initial	Pickles Patch	Colpophyllia natans	6976	3179	3135	3131	3131
-CN043-3	CN043	Initial	Pickles Patch	Colpophyllia natans	7721	4410	4359	4353	4353
 CN043-4	CN043	2-month	Pickles Patch	Colpophyllia natans	21795	11858	11149	9526	9526
 CN043-5	CN043	2-month	Pickles Patch	Colpophyllia natans	13094	8390	7713	2733	2704
 CN043-6	CN043	2-month	Pickles Patch	Colpophyllia natans	21938	11449	10965	1332	1332
@@ -98,7 +91,6 @@ DL046-3	DL046	Initial	West Turtle	Diploria labyrinthiformis	15390	8681	8199	1274
 DL046-4	DL046	2-month	West Turtle	Diploria labyrinthiformis	19440	9704	9493	9213	9213
 DL046-5	DL046	2-month	West Turtle	Diploria labyrinthiformis	16025	9848	9187	7654	7654
 DL046-6	DL046	2-month	West Turtle	Diploria labyrinthiformis	12948	6709	6614	6545	6541
-DL047-2	DL047	Initial	West Turtle	Diploria labyrinthiformis	9063	4485	4398	4350	4350
 DL047-3	DL047	Initial	West Turtle	Diploria labyrinthiformis	12964	6698	6563	6425	6425
 DL047-4	DL047	2-month	West Turtle	Diploria labyrinthiformis	20237	14139	13069	7519	7476
 DL047-5	DL047	2-month	West Turtle	Diploria labyrinthiformis	24551	15513	14801	5710	5539
@@ -110,12 +102,10 @@ DL049-4	DL049	2-month	West Turtle	Diploria labyrinthiformis	21717	12185	11993	17
 DL049-5	DL049	2-month	West Turtle	Diploria labyrinthiformis	17559	9476	8856	1395	1395
 DL049-6	DL049	2-month	West Turtle	Diploria labyrinthiformis	17200	9925	9760	9570	9570
 DL055-1	DL055	Initial	Looe Key Inshore	Diploria labyrinthiformis	10728	6042	854	592	592
-DL055-2	DL055	Initial	Looe Key Inshore	Diploria labyrinthiformis	9830	4907	4703	4588	4588
 DL055-3	DL055	Initial	Looe Key Inshore	Diploria labyrinthiformis	7561	4158	1678	1056	1056
 DL055-4	DL055	2-month	Looe Key Inshore	Diploria labyrinthiformis	23552	14181	13692	12975	12943
 DL055-5	DL055	2-month	Looe Key Inshore	Diploria labyrinthiformis	26421	15748	15006	5079	4905
 DL055-6	DL055	2-month	Looe Key Inshore	Diploria labyrinthiformis	20691	11728	11268	10736	10736
-DL056-1	DL056	Initial	Looe Key Inshore	Diploria labyrinthiformis	8243	3990	3833	3787	3787
 DL056-2	DL056	Initial	Looe Key Inshore	Diploria labyrinthiformis	12666	7742	4279	3434	3423
 DL056-3	DL056	Initial	Looe Key Inshore	Diploria labyrinthiformis	8819	5326	1103	912	912
 DL056-4	DL056	2-month	Looe Key Inshore	Diploria labyrinthiformis	13351	7932	7555	6535	6535
