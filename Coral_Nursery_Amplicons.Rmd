@@ -349,7 +349,7 @@ dev.off()
 ```
 
 
-## Bubble Plot of most abundant taxa
+## Bubble Plot of most abundant bacterial families
 
 ```{r, echo=FALSE}
 # load in data and create phyloseq object
@@ -384,57 +384,73 @@ fam_tax <- fam_tax %>% mutate("total" = rowSums((fam_tax[,1:152]), na.rm = TRUE)
 fam_tax <- fam_tax[order(fam_tax$total, decreasing = TRUE),]
 fam25 <- fam_tax[1:25,]
 fam25$total<-NULL
-fam_long<-melt(fam25,value.name="proportion",variable.name="sample",id.vars=c("Kingdom","Phylum","Class","Order","Family"))
+# calculate a row with the relative abundance of all other families not included in the top 25 (21 other families), first remove taxonomy
+fam25_just25<-fam25[1:152]
+# next add up the relative abundances of the top 25 families
+fam25_25total<-rbind(fam25_just25, colSums(fam25_just25[,1:152]))
+# calculate what is the relative abundance of the other families
+fam25_others<-rbind(fam25_25total, 1-fam25_25total[26,])
+# add "Others" as value for 5 taxonomy columns
+fam25_others$Kingdom = "Others"
+fam25_others$Phylum = "Others"
+fam25_others$Class = "Others"
+fam25_others$Order = "Others"
+fam25_others$Family = "Others"
+# remove all but the last row
+others<-fam25_others[-(1:26),]
+# finally, add only the last row back to the original dataframe fam25
+fam25_withothers <- rbind(fam25, others)
+
+fam_long<-melt(fam25_withothers,value.name="proportion",variable.name="sample",id.vars=c("Kingdom","Phylum","Class","Order","Family"))
 # Merge with metadata for plotting aesthetics
 samples <- as.data.frame(samples)
 samples <- tibble::rownames_to_column(samples, "sample")
 famplot <- merge(fam_long,samples,by="sample", all=TRUE)
 
-# set aesthetics
-famplot$timepoint<-factor(famplot$timepoint,levels=c("Initial","2-month"))
-# manually sort families by relative abundance, list order: first in list = bottom of y-axis  
-famplot$Family<-factor(famplot$Family,levels=c("Bacteroidia","Burkholderiaceae","Rhodospirillaceae","Paraspirulinaceae","AB1","Alphaproteobacteria","Kiloniellaceae","Bacteria","Fusibacteraceae","Woeseiaceae","Endozoicomonadaceae","Desulfocapsaceae","Desulfovibrionaceae","Nitrosopumilaceae","Cyanobacteriaceae","Phormidiaceae","Campylobacterales","Hyphomonadaceae","Flavobacteriaceae","Blastocatellaceae","Paracoccaceae","Terasakiellaceae","Vibrionaceae","Amoebophilaceae","Ga0077536"))
-
-# heatmap with ggplot, both coral species together
-p <- ggplot(famplot, aes(sample, Family, fill= proportion)) + geom_tile()+
-  facet_grid(.~timepoint,scales="free",space="free")+
-  theme(axis.text.x=element_text(angle=90))+
-  #theme(axis.text.y=element_text(face="italic"))+
-  theme(axis.title.x=element_blank())+
-  theme(axis.title.y=element_blank())+
-  scale_fill_gradient(low="white", high="#004488")
-p
-
 # separate by coral species
 famplotC <- famplot %>% filter(coral.species =='Colpophyllia natans')
+unique(famplotC$Class) # 12 classes
+# [1] "Gammaproteobacteria" "Bacteroidia"         "Alphaproteobacteria" "Blastocatellia"      "Campylobacteria"    
+# [6] "Cyanobacteriia"      "Nitrososphaeria"     "Desulfovibrionia"    "Desulfobulbia"       "Clostridia"         
+# [11] "Bacteria"            "Others"  
+
 famplotD <- famplot %>% filter(coral.species =='Diploria labyrinthiformis')
+unique(famplotD$Class) # same 12 classes as above
+
+#set colorblind friendly palette, this is muted_nine plus black and white
+cols<-c("Alphaproteobacteria"="#CC6677","Bacteria"="#117733","Bacteroidia"="#332288","Blastocatellia"="#88CCEE","Campylobacteria"="#999933","Clostridia"="#882255","Cyanobacteriia"="#44AA99","Desulfobulbia"="#DDCC77","Desulfovibrionia"="#AA4499","Gammaproteobacteria"="#000000","Nitrososphaeria"="#F9F4EC","Others"="#999999")
+
 
 # set aesthetics for each coral species
 famplotC$timepoint<-factor(famplotC$timepoint,levels=c("Initial","2-month"))
-famplotC$Family<-factor(famplotC$Family,levels=c("Bacteroidia","Burkholderiaceae","Rhodospirillaceae","Paraspirulinaceae","AB1","Alphaproteobacteria","Kiloniellaceae","Bacteria","Fusibacteraceae","Woeseiaceae","Endozoicomonadaceae","Desulfocapsaceae","Desulfovibrionaceae","Nitrosopumilaceae","Cyanobacteriaceae","Phormidiaceae","Campylobacterales","Hyphomonadaceae","Flavobacteriaceae","Blastocatellaceae","Paracoccaceae","Terasakiellaceae","Vibrionaceae","Amoebophilaceae","Ga0077536"))
+famplotC$Family<-factor(famplotC$Family,levels=c("Others","Bacteroidia","Burkholderiaceae","Rhodospirillaceae","Paraspirulinaceae","AB1","Alphaproteobacteria","Kiloniellaceae","Bacteria","Fusibacteraceae","Woeseiaceae","Endozoicomonadaceae","Desulfocapsaceae","Desulfovibrionaceae","Nitrosopumilaceae","Cyanobacteriaceae","Phormidiaceae","Campylobacterales","Hyphomonadaceae","Flavobacteriaceae","Blastocatellaceae","Paracoccaceae","Terasakiellaceae","Vibrionaceae","Amoebophilaceae","Ga0077536"))
 
 famplotD$timepoint<-factor(famplotD$timepoint,levels=c("Initial","2-month"))
-famplotD$Family<-factor(famplotD$Family,levels=c("Bacteroidia","Burkholderiaceae","Rhodospirillaceae","Paraspirulinaceae","AB1","Alphaproteobacteria","Kiloniellaceae","Bacteria","Fusibacteraceae","Woeseiaceae","Endozoicomonadaceae","Desulfocapsaceae","Desulfovibrionaceae","Nitrosopumilaceae","Cyanobacteriaceae","Phormidiaceae","Campylobacterales","Hyphomonadaceae","Flavobacteriaceae","Blastocatellaceae","Paracoccaceae","Terasakiellaceae","Vibrionaceae","Amoebophilaceae","Ga0077536"))
+famplotD$Family<-factor(famplotD$Family,levels=c("Others","Bacteroidia","Burkholderiaceae","Rhodospirillaceae","Paraspirulinaceae","AB1","Alphaproteobacteria","Kiloniellaceae","Bacteria","Fusibacteraceae","Woeseiaceae","Endozoicomonadaceae","Desulfocapsaceae","Desulfovibrionaceae","Nitrosopumilaceae","Cyanobacteriaceae","Phormidiaceae","Campylobacterales","Hyphomonadaceae","Flavobacteriaceae","Blastocatellaceae","Paracoccaceae","Terasakiellaceae","Vibrionaceae","Amoebophilaceae","Ga0077536"))
 
-pdf("Top25families_CNAT.pdf", bg ="white", width=8.5)
-pc <- ggplot(famplotC, aes(sample, Family, fill= proportion)) + geom_tile()+
+pdf("Top25families_CNAT.pdf", bg ="white", width=11)
+pc <- ggplot(famplotC, aes(sample, Family, fill= Class))+
+  geom_point(aes(size=proportion*100),alpha=0.8,shape=21)+
+  scale_size(range = c(0,10), name="Relative abundance")+
+  scale_fill_manual(values = cols)+
   facet_grid(.~timepoint,scales="free",space="free")+
+  theme_bw()+
   theme(axis.text.x=element_text(angle=90))+
-  #theme(axis.text.y=element_text(face="italic"))+
   theme(axis.title.x=element_blank())+
-  theme(axis.title.y=element_blank())+
-  scale_fill_gradient(low="white", high="#004488")
+  theme(axis.title.y=element_blank())
 pc
 dev.off()
 
-pdf("Top25families_DLAB.pdf", bg ="white", width=8.5)
-pd <- ggplot(famplotD, aes(sample, Family, fill= proportion)) + geom_tile()+
+pdf("Top25families_DLAB.pdf", bg ="white", width=11)
+pd <- ggplot(famplotD, aes(sample, Family, fill= Class))+
+  geom_point(aes(size=proportion*100),alpha=0.8,shape=21)+
+  scale_size(range = c(0,10), name="Relative abundance")+
+  scale_fill_manual(values = cols)+
   facet_grid(.~timepoint,scales="free",space="free")+
+  theme_bw()+
   theme(axis.text.x=element_text(angle=90))+
-  #theme(axis.text.y=element_text(face="italic"))+
   theme(axis.title.x=element_blank())+
-  theme(axis.title.y=element_blank())+
-  scale_fill_gradient(low="white", high="#004488")
+  theme(axis.title.y=element_blank())
 pd
 dev.off()
 
