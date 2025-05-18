@@ -1,0 +1,86 @@
+Permutation test for adonis under reduced model
+Terms added sequentially (first to last)
+Permutation: free
+Number of permutations: 999
+
+adonis2(formula = dist.clr ~ coral.species * timepoint, data = as(sample_data(ps_qf), "data.frame"))
+                         Df SumOfSqs      R2      F Pr(>F)  
+coral.species             1     3722 0.01626 2.5232  0.061 .
+timepoint                 1     3307 0.01444 2.2416  0.095 .
+coral.species:timepoint   1     3591 0.01568 2.4339  0.058 .
+Residual                148   218342 0.95362                
+Total                   151   228962 1.00000                
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+
+
+
+
+Permutation test for adonis under reduced model
+Terms added sequentially (first to last)
+Permutation: free
+Number of permutations: 999
+
+adonis2(formula = dist.clr ~ colony * timepoint, data = as(sample_data(ps_qf), "data.frame"))
+                  Df SumOfSqs      R2      F Pr(>F)  
+colony            30    48800 0.21314 1.1904  0.164  
+timepoint          1     2629 0.01148 1.9242  0.131  
+colony:timepoint  28    51818 0.22632 1.3543  0.053 .
+Residual          92   125714 0.54906                
+Total            151   228962 1.00000                
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+
+
+
+
+$parent_call
+[1] "dist.clr ~ site/coral.species , strata = coral.species , permutations 999"
+
+$`West Turtle_vs_Looe Key Inshore`
+                    Df SumOfSqs      R2      F Pr(>F)
+site                 1     1546 0.00902 0.9750  0.324
+site:coral.species   2     6514 0.03801 2.0544  0.394
+Residual           103   163297 0.95296              
+Total              106   171357 1.00000              
+
+$`West Turtle_vs_Pickles Patch`
+                   Df SumOfSqs      R2      F Pr(>F)
+site                1     1841 0.01295 1.2876  0.216
+site:coral.species  2     3079 0.02165 1.0765  0.320
+Residual           96   137298 0.96540              
+Total              99   142219 1.00000              
+
+$`Looe Key Inshore_vs_Pickles Patch`
+                   Df SumOfSqs      R2      F Pr(>F)  
+site                1     1000 0.00700 0.6841  0.513  
+site:coral.species  2     5847 0.04093 1.9988  0.071 .
+Residual           93   136012 0.95207                
+Total              96   142860 1.00000                
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+attr(,"class")
+[1] "pwadstrata" "list"      
+
+
+
+
+
+
+$parent_call
+[1] "dist.clr ~ timepoint/colony , strata = colony , permutations 999"
+
+$`Initial_vs_2-month`
+                  Df SumOfSqs      R2      F Pr(>F)  
+timepoint          1     3256 0.01422 2.3830  0.080 .
+timepoint:colony  58    99991 0.43672 1.2616  0.084 .
+Residual          92   125714 0.54906                
+Total            151   228962 1.00000                
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+attr(,"class")
+[1] "pwadstrata" "list"  
