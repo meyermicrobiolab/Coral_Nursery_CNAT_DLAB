@@ -643,11 +643,154 @@ print(perm2) # colony (genotype) = not significant
 
 ```
 
-# Differential abundance of taxa with time, controlling for coral species
-
+# Differential abundance of taxa over time: CNAT only
 
 ```{r, echo=FALSE}
-library(corncob)
+otu <- read.table("silva_nochloronomito_otu_table_qf.txt",sep="\t",header=TRUE, row.names=1)
+taxon <- read.table("silva_nochloronomito_taxa_table_qf.txt",sep="\t",header=TRUE,row.names=1)
+samples<-read.table("metadata_qf.txt",sep="\t",header=T,row.names=1)
+OTU = otu_table(otu, taxa_are_rows=FALSE)
+taxon<-as.matrix(taxon)
+TAX = tax_table(taxon)
+sampledata = sample_data(samples)
+ps_qf <- phyloseq(otu_table(otu, taxa_are_rows=FALSE), 
+               sample_data(samples), 
+               tax_table(taxon))
+ps_qf #2032 taxa and 152 samples
+
+#Select CNAT samples only
+ps_cnat = subset_samples(ps_qf, coral.species == "Colpophyllia natans")
+ps_cnat #2032 taxa and 75 samples
+
+# collapse ASVs into families
+ps_fam = tax_glom(ps_cnat, "Family")
+ps_fam # 320 families and 75 samples
+ps_fam <- prune_taxa(taxa_sums(ps_fam) > 1, ps_fam) #remove taxa not found in remaining samples
+ps_fam #244 families and 75 samples
+
+# DA determined relative to first reference level, so set this manually to the initial timepoint
+sample_data(ps_fam)$timepoint<-factor(sample_data(ps_fam)$timepoint,levels=c("Initial","2-month"))
+
+set.seed(1)
+time.da <- differentialTest(formula = ~ timepoint, 
+                                 phi.formula = ~ timepoint,
+                                 formula_null = ~ 1,
+                                 phi.formula_null = ~ timepoint,
+                                 test = "Wald", boot = FALSE,
+                                 data = ps_fam,
+                                 fdr_cutoff = 0.05)
+
+summary(time.da)
+time.da
+time.da$significant_taxa #1
+
+#quick look at results with corncob's plotting feature
+plot(time.da, c("Family"))
+# Positive values mean that taxon is enriched at 2-month timepoint relative to initial samples
+# CNAT: only Blastocatellaceae is DA over time, more abundant in initial timepoint 
+
+# create a function that will return the values of interest
+sigtaxto_df <- function(treatment.da, ps_fam) {
+  df.out <- c()
+  for (i in 1:length(treatment.da$significant_models)) { #from 1 to the number of significant taxa
+    df.out = rbind(df.out, treatment.da$significant_models[[i]]$coefficients[2, 1:4]) #bind the significant taxa with coefficient, std. error, t value, Pr. coefficients[2,] is the DA model output.
+  }
+  asv = as.vector(treatment.da$significant_taxa) #get significant families
+  Class = as.vector(otu_to_taxonomy(data = ps_fam, time.da$significant_taxa, level = c("Class")))
+  Order = as.vector(otu_to_taxonomy(data = ps_fam, time.da$significant_taxa, level = c("Order")))
+  Family = as.vector(otu_to_taxonomy(data = ps_fam, time.da$significant_taxa, level = c("Family")))
+  
+  df.bind <- as.data.frame(cbind(df.out, asv, Class, Order, Family))
+  colnames(df.bind) <- c("Estimate", "StdError", "tvalue", "Pr", "asv", "Class", "Order", "Family")
+  df.bind$Estimate = as.numeric(as.character(df.bind$Estimate)) #estimate column should be numeric 
+  df.bind$StdError = as.numeric(as.character(df.bind$StdError)) #stderror column should be numeric 
+  
+  return(df.bind)
+}
+
+df <- sigtaxto_df(time.da, ps_fam) #make a df of the corncob output and the taxonomy
+### Save these data so you don't have to re-run the model ###
+write.table(df, "DA-Families_time_CNAT.txt", sep="\t",row.names = FALSE)
+
+
+```
+
+
+# Differential abundance of taxa over time: DLAB only
+
+```{r, echo=FALSE}
+otu <- read.table("silva_nochloronomito_otu_table_qf.txt",sep="\t",header=TRUE, row.names=1)
+taxon <- read.table("silva_nochloronomito_taxa_table_qf.txt",sep="\t",header=TRUE,row.names=1)
+samples<-read.table("metadata_qf.txt",sep="\t",header=T,row.names=1)
+OTU = otu_table(otu, taxa_are_rows=FALSE)
+taxon<-as.matrix(taxon)
+TAX = tax_table(taxon)
+sampledata = sample_data(samples)
+ps_qf <- phyloseq(otu_table(otu, taxa_are_rows=FALSE), 
+               sample_data(samples), 
+               tax_table(taxon))
+ps_qf #2032 taxa and 152 samples
+
+#Select DLAB samples only
+ps_dlab = subset_samples(ps_qf, coral.species == "Diploria labyrinthiformis")
+ps_dlab #2032 taxa and 77 samples
+
+# collapse ASVs into families
+ps_fam = tax_glom(ps_dlab, "Family")
+ps_fam # 320 families and 77 samples
+ps_fam <- prune_taxa(taxa_sums(ps_fam) > 1, ps_fam) #remove taxa not found in remaining samples
+ps_fam #255 families and 77 samples
+
+# DA determined relative to first reference level, so set this manually to the initial timepoint
+sample_data(ps_fam)$timepoint<-factor(sample_data(ps_fam)$timepoint,levels=c("Initial","2-month"))
+
+set.seed(1)
+time.da <- differentialTest(formula = ~ timepoint, 
+                                 phi.formula = ~ timepoint,
+                                 formula_null = ~ 1,
+                                 phi.formula_null = ~ timepoint,
+                                 test = "Wald", boot = FALSE,
+                                 data = ps_fam,
+                                 fdr_cutoff = 0.05)
+
+summary(time.da)
+time.da
+time.da$significant_taxa #4
+
+#quick look at results with corncob's plotting feature
+plot(time.da, c("Family"))
+# Positive values mean that taxon is enriched at 2-month timepoint relative to initial samples
+# DLAB: Nitrosopumilaceae and Caldilineaceae more abundant in initial timepoint, Vibrionaceae and Campylobacterales more abundant at 2 months
+
+# create a function that will return the values of interest
+sigtaxto_df <- function(treatment.da, ps_fam) {
+  df.out <- c()
+  for (i in 1:length(treatment.da$significant_models)) { #from 1 to the number of significant taxa
+    df.out = rbind(df.out, treatment.da$significant_models[[i]]$coefficients[2, 1:4]) #bind the significant taxa with coefficient, std. error, t value, Pr. coefficients[2,] is the DA model output.
+  }
+  asv = as.vector(treatment.da$significant_taxa) #get significant families
+  Class = as.vector(otu_to_taxonomy(data = ps_fam, time.da$significant_taxa, level = c("Class")))
+  Order = as.vector(otu_to_taxonomy(data = ps_fam, time.da$significant_taxa, level = c("Order")))
+  Family = as.vector(otu_to_taxonomy(data = ps_fam, time.da$significant_taxa, level = c("Family")))
+  
+  df.bind <- as.data.frame(cbind(df.out, asv, Class, Order, Family))
+  colnames(df.bind) <- c("Estimate", "StdError", "tvalue", "Pr", "asv", "Class", "Order", "Family")
+  df.bind$Estimate = as.numeric(as.character(df.bind$Estimate)) #estimate column should be numeric 
+  df.bind$StdError = as.numeric(as.character(df.bind$StdError)) #stderror column should be numeric 
+  
+  return(df.bind)
+}
+
+df <- sigtaxto_df(time.da, ps_fam) #make a df of the corncob output and the taxonomy
+### Save these data so you don't have to re-run the model ###
+write.table(df, "DA-Families_time_DLAB.txt", sep="\t",row.names = FALSE)
+
+```
+
+
+# Differential abundance of taxa over time, controlling for coral species
+
+```{r, echo=FALSE}
 otu <- read.table("silva_nochloronomito_otu_table_qf.txt",sep="\t",header=TRUE, row.names=1)
 taxon <- read.table("silva_nochloronomito_taxa_table_qf.txt",sep="\t",header=TRUE,row.names=1)
 samples<-read.table("metadata_qf.txt",sep="\t",header=T,row.names=1)
@@ -663,6 +806,8 @@ ps_qf #2032 taxa and 152 samples
 # collapse ASVs into families
 ps_fam = tax_glom(ps_qf, "Family")
 ps_fam # 320 families and 152 samples
+ps_fam <- prune_taxa(taxa_sums(ps_fam) > 1, ps_fam) #remove taxa not found in remaining samples
+ps_fam #318 families and 152 samples
 
 # DA determined relative to first reference level, so set this manually to the initial timepoint
 sample_data(ps_fam)$timepoint<-factor(sample_data(ps_fam)$timepoint,levels=c("Initial","2-month"))
@@ -680,18 +825,17 @@ summary(time.da)
 time.da
 time.da$significant_taxa #18
 
-
 #quick look at results with corncob's plotting feature
 plot(time.da, c("Family"))
 # Positive values mean that taxon is enriched at 2-month timepoint relative to initial samples
 
 # create a function that will return the values of interest
-sigtaxto_df <- function(time.da, ps_fam) {
+sigtaxto_df <- function(treatment.da, ps_fam) {
   df.out <- c()
-  for (i in 1:length(time.da$significant_models)) { #from 1 to the number of significant taxa
-    df.out = rbind(df.out, time.da$significant_models[[i]]$coefficients[2, 1:4]) #bind the significant taxa with coefficient, std. error, t value, Pr. coefficients[2,] is the DA model output.
+  for (i in 1:length(treatment.da$significant_models)) { #from 1 to the number of significant taxa
+    df.out = rbind(df.out, treatment.da$significant_models[[i]]$coefficients[2, 1:4]) #bind the significant taxa with coefficient, std. error, t value, Pr. coefficients[2,] is the DA model output.
   }
-  asv = as.vector(time.da$significant_taxa) #get significant families
+  asv = as.vector(treatment.da$significant_taxa) #get significant families
   Class = as.vector(otu_to_taxonomy(data = ps_fam, time.da$significant_taxa, level = c("Class")))
   Order = as.vector(otu_to_taxonomy(data = ps_fam, time.da$significant_taxa, level = c("Order")))
   Family = as.vector(otu_to_taxonomy(data = ps_fam, time.da$significant_taxa, level = c("Family")))
@@ -705,9 +849,8 @@ sigtaxto_df <- function(time.da, ps_fam) {
 }
 
 df <- sigtaxto_df(time.da, ps_fam) #make a df of the corncob output and the taxonomy
-
 ### Save these data so you don't have to re-run the model ###
-write.table(df, "DA-Families_time.txt", sep="\t",row.names = FALSE)
+write.table(df, "DA-Families_time_controlling-coral-species.txt", sep="\t",row.names = FALSE)
 
 
 # families enriched at 2 months: Rickettsiaceae, Eurycoccales Incertae Sedis, Desulfovibrionaceae, Hyphomonadaceae, Vibrionaceae, Cellvibrionaceae, Terasakiellaceae, Campylobacterales
@@ -715,5 +858,5 @@ write.table(df, "DA-Families_time.txt", sep="\t",row.names = FALSE)
 # families enriched at initial timepoint: Cyclobacteriaceae, Amoebophilaceae, Blastocatellaceae, Caminicellaceae, Microtrichaceae, Vicinamibacteria Subgroup 9, Vicinamibacterales, Caldilineaceae, Cyanobacteriaceae, Nitrosopumilaceae
 
 
-
 ```
+
