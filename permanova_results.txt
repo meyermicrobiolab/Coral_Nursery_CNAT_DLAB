@@ -1,3 +1,6 @@
+ps_qf #2032 taxa and 152 samples
+
+
 Permutation test for adonis under reduced model
 Terms added sequentially (first to last)
 Permutation: free
