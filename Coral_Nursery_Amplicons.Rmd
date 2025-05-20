@@ -544,7 +544,12 @@ perm3<-pairwise.adonis2(dist.clr~timepoint/colony,as(sample_data(ps_qf),"data.fr
 print(perm3)
 # time, controlling for colony is significant at 0.05 level, R2 = 0.01422; interaction of time and colony sign. at 0.05 level, R2 = 0.43672
 
+perm4<-pairwise.adonis2(dist.clr~site/coral.species,as(sample_data(ps_qf),"data.frame"), strata='coral.species')
+print(perm4) # site, controlling for coral species = not significant
+
 ```
+
+
 ## Look at permanova for only the 2-month samples because it has all 90 samples
 
 
@@ -639,6 +644,9 @@ print(perm) # site, controlling for coral species = not significant
 
 perm2<-adonis2(dist.clr~colony,as(sample_data(ps),"data.frame"))
 print(perm2) # colony (genotype) = not significant
+
+perm3<-adonis2(dist.clr~species,as(sample_data(ps),"data.frame"))
+print(perm3) # species = not significant
 
 ```
 
