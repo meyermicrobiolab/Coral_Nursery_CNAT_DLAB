@@ -547,6 +547,9 @@ print(perm3)
 perm4<-pairwise.adonis2(dist.clr~site/coral.species,as(sample_data(ps_qf),"data.frame"), strata='coral.species')
 print(perm4) # site, controlling for coral species = not significant
 
+perm5<-pairwise.adonis2(dist.clr~time/coral.species,as(sample_data(ps_qf),"data.frame"), strata='coral.species')
+print(perm5) # time, controlling for coral species is significant at 0.05 level, R2 = 0.01422; interaction of time and coral species sign. at 0.05 level, R2 = 0.03216
+
 ```
 
 
