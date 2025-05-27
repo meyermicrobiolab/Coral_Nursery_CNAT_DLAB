@@ -840,12 +840,12 @@ plot(time.da, c("Family"))
 # Positive values mean that taxon is enriched at 2-month timepoint relative to initial samples
 
 # create a function that will return the values of interest
-sigtaxto_df <- function(treatment.da, ps_fam) {
+sigtaxto_df <- function(time.da, ps_fam) {
   df.out <- c()
-  for (i in 1:length(treatment.da$significant_models)) { #from 1 to the number of significant taxa
-    df.out = rbind(df.out, treatment.da$significant_models[[i]]$coefficients[2, 1:4]) #bind the significant taxa with coefficient, std. error, t value, Pr. coefficients[2,] is the DA model output.
+  for (i in 1:length(time.da$significant_models)) { #from 1 to the number of significant taxa
+    df.out = rbind(df.out, time.da$significant_models[[i]]$coefficients[2, 1:4]) #bind the significant taxa with coefficient, std. error, t value, Pr. coefficients[2,] is the DA model output.
   }
-  asv = as.vector(treatment.da$significant_taxa) #get significant families
+  asv = as.vector(time.da$significant_taxa) #get significant families
   Class = as.vector(otu_to_taxonomy(data = ps_fam, time.da$significant_taxa, level = c("Class")))
   Order = as.vector(otu_to_taxonomy(data = ps_fam, time.da$significant_taxa, level = c("Order")))
   Family = as.vector(otu_to_taxonomy(data = ps_fam, time.da$significant_taxa, level = c("Family")))
@@ -869,4 +869,76 @@ write.table(df, "DA-Families_time_controlling-coral-species.txt", sep="\t",row.n
 
 
 ```
+
+
+
+# Differential abundance of taxa by site, controlling for coral species. Using 2-month samples only
+
+```{r, echo=FALSE}
+otu <- read.table("silva_nochloronomito_otu_table_2month.txt",sep="\t",header=TRUE, row.names=1)
+taxon <- read.table("silva_nochloronomito_taxa_table_2month.txt",sep="\t",header=TRUE,row.names=1)
+samples<-read.table("metadata_2month.txt",sep="\t",header=T,row.names=1)
+OTU = otu_table(otu, taxa_are_rows=FALSE)
+taxon<-as.matrix(taxon)
+TAX = tax_table(taxon)
+sampledata = sample_data(samples)
+ps <- phyloseq(otu_table(otu, taxa_are_rows=FALSE), 
+               sample_data(samples), 
+               tax_table(taxon))
+ps # 2032 taxa and 90 samples
+
+
+# collapse ASVs into families
+ps_fam = tax_glom(ps, "Family")
+ps_fam # 320 families and 90 samples
+ps_fam <- prune_taxa(taxa_sums(ps_fam) > 1, ps_fam) #remove taxa not found in remaining samples
+ps_fam # 222 families and 90 samples
+
+# DA determined relative to first reference level, so set this manually to Pickles Patch, the site that was most different environment (not influenced by heated, supersaline bay water)
+sample_data(ps_fam)$site<-factor(sample_data(ps_fam)$site,levels=c("Pickles Patch","Looe Key Inshore","West Turtle"))
+
+set.seed(1)
+site.da <- differentialTest(formula = ~ site + coral.species, 
+                                 phi.formula = ~ site,
+                                 formula_null = ~ coral.species,
+                                 phi.formula_null = ~ 1,
+                                 test = "Wald", boot = FALSE,
+                                 data = ps_fam,
+                                 fdr_cutoff = 0.05)
+
+summary(site.da)
+site.da
+site.da$significant_taxa #1
+
+#quick look at results with corncob's plotting feature
+plot(site.da, c("Family"))
+# Positive values mean that taxon is enriched at the site relative to Pickles; both Looe Key and West Turtle are enriched in the unclassified family from the Gammaproteobacterial order Ga0077536
+
+# create a function that will return the values of interest
+sigtaxto_df <- function(site.da, ps_fam) {
+  df.out <- c()
+  for (i in 1:length(site.da$significant_models)) { #from 1 to the number of significant taxa
+    df.out = rbind(df.out, site.da$significant_models[[i]]$coefficients[2, 1:4]) #bind the significant taxa with coefficient, std. error, t value, Pr. coefficients[2,] is the DA model output.
+  }
+  asv = as.vector(site.da$significant_taxa) #get significant families
+  Class = as.vector(otu_to_taxonomy(data = ps_fam, site.da$significant_taxa, level = c("Class")))
+  Order = as.vector(otu_to_taxonomy(data = ps_fam, site.da$significant_taxa, level = c("Order")))
+  Family = as.vector(otu_to_taxonomy(data = ps_fam, site.da$significant_taxa, level = c("Family")))
+  
+  df.bind <- as.data.frame(cbind(df.out, asv, Class, Order, Family))
+  colnames(df.bind) <- c("Estimate", "StdError", "tvalue", "Pr", "asv", "Class", "Order", "Family")
+  df.bind$Estimate = as.numeric(as.character(df.bind$Estimate)) #estimate column should be numeric 
+  df.bind$StdError = as.numeric(as.character(df.bind$StdError)) #stderror column should be numeric 
+  
+  return(df.bind)
+}
+
+df <- sigtaxto_df(site.da, ps_fam) #make a df of the corncob output and the taxonomy
+### Save these data so you don't have to re-run the model ###
+write.table(df, "DA-Families_site_controlling-coral-species.txt", sep="\t",row.names = FALSE)
+
+
+
+```
+
 
