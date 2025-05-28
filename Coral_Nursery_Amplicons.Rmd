@@ -425,6 +425,10 @@ cols<-c("Alphaproteobacteria"="#CC6677","Bacteria"="#117733","Bacteroidia"="#332
 famplotC$timepoint<-factor(famplotC$timepoint,levels=c("Initial","2-month"))
 famplotC$Family<-factor(famplotC$Family,levels=c("Others","Bacteroidia","Burkholderiaceae","Rhodospirillaceae","Paraspirulinaceae","AB1","Alphaproteobacteria","Kiloniellaceae","Bacteria","Fusibacteraceae","Woeseiaceae","Endozoicomonadaceae","Desulfocapsaceae","Desulfovibrionaceae","Nitrosopumilaceae","Cyanobacteriaceae","Phormidiaceae","Campylobacterales","Hyphomonadaceae","Flavobacteriaceae","Blastocatellaceae","Paracoccaceae","Terasakiellaceae","Vibrionaceae","Amoebophilaceae","Ga0077536"))
 
+#order samples by site West to East (lower keys = Looe, middle keys = West Turtle, upper keys = Pickles)
+famplotC$sample<-factor(famplotC$sample,levels=c("CN034-1","CN034-2","CN034-3","CN034-4","CN034-5","CN034-6","CN035-1","CN035-2","CN035-3","CN035-4","CN035-5","CN035-6","CN036-3","CN036-4","CN036-5","CN036-6","CN037-1","CN037-2","CN037-3","CN037-4","CN037-5","CN037-6","CN038-1","CN038-2","CN038-3","CN038-4","CN038-5","CN038-6","CN021-1","CN021-2","CN021-3","CN021-4","CN021-5","CN021-6","CN022-1","CN022-2","CN022-4","CN022-5","CN022-6","CN026-1","CN026-3","CN026-4","CN026-5","CN026-6","CN027-1","CN027-2","CN027-3","CN027-4","CN027-5","CN027-6","CN028-1","CN028-2","CN028-3","CN028-4","CN028-5","CN028-6","CN041-2","CN041-4","CN041-5","CN041-6","CN042-4","CN042-5","CN042-6","CN043-1","CN043-4","CN043-5","CN043-6","CN044-1","CN044-4","CN044-5","CN044-6","CN045-1","CN045-4","CN045-5","CN045-6"))
+unique(famplotC$sample)
+
 famplotD$timepoint<-factor(famplotD$timepoint,levels=c("Initial","2-month"))
 famplotD$Family<-factor(famplotD$Family,levels=c("Others","Bacteroidia","Burkholderiaceae","Rhodospirillaceae","Paraspirulinaceae","AB1","Alphaproteobacteria","Kiloniellaceae","Bacteria","Fusibacteraceae","Woeseiaceae","Endozoicomonadaceae","Desulfocapsaceae","Desulfovibrionaceae","Nitrosopumilaceae","Cyanobacteriaceae","Phormidiaceae","Campylobacterales","Hyphomonadaceae","Flavobacteriaceae","Blastocatellaceae","Paracoccaceae","Terasakiellaceae","Vibrionaceae","Amoebophilaceae","Ga0077536"))
 
@@ -499,6 +503,7 @@ theme_set(theme_bw()+theme(panel.grid.major = element_blank(),panel.grid.minor =
 #cols<-c("Colpophyllia natans"="#56B4E9","Diploria labyrinthiformis"="#0072B2")
 cols<-c("Initial"="#56B4E9","2-month"="#0072B2")
 samples$timepoint<-factor(samples$timepoint,levels=c("Initial","2-month"))
+samples$site<-factor(samples$site,levels=c("Looe Key Inshore","West Turtle","Pickles Patch"))
 
 pdf("PCA.pdf",bg ="white",width=11)
 p<-ggplot(df_out,aes(x=PC1,y=PC2,color=samples$timepoint,shape=samples$site))
@@ -535,6 +540,9 @@ print(perm)
 perm1<-adonis2(dist.clr~colony*timepoint,as(sample_data(ps_qf),"data.frame"))
 print(perm1) 
 # interaction of colony and time is significant at 0.05 level, R2 = 0.22632
+
+perm1a<-adonis2(dist.clr~colony,as(sample_data(ps_qf),"data.frame"))
+print(perm1a) # colony: not significant
 
 perm2<-pairwise.adonis2(dist.clr~site/coral.species,as(sample_data(ps_qf),"data.frame"), strata='coral.species')
 print(perm2)
@@ -941,4 +949,106 @@ write.table(df, "DA-Families_site_controlling-coral-species.txt", sep="\t",row.n
 
 ```
 
+# Create a bubble plot with DA families in the top 25
+
+
+```{r, echo=FALSE}
+otu <- read.table("silva_nochloronomito_otu_table_qf.txt",sep="\t",header=TRUE, row.names=1)
+taxon <- read.table("silva_nochloronomito_taxa_table_qf.txt",sep="\t",header=TRUE,row.names=1)
+samples<-read.table("metadata_qf.txt",sep="\t",header=T,row.names=1)
+OTU = otu_table(otu, taxa_are_rows=FALSE)
+taxon<-as.matrix(taxon)
+TAX = tax_table(taxon)
+sampledata = sample_data(samples)
+ps_qf <- phyloseq(otu_table(otu, taxa_are_rows=FALSE), 
+               sample_data(samples), 
+               tax_table(taxon))
+ps_qf #2032 taxa and 152 samples
+
+# collapse ASVs into families
+ps_fam = tax_glom(ps_qf, "Family")
+ps_fam # 320 families and 152 samples
+ps_fam <- prune_taxa(taxa_sums(ps_fam) > 1, ps_fam) #remove taxa not found in remaining samples
+ps_fam # 318 families and 152 samples
+
+ps_fam_ra<-transform_sample_counts(ps_fam, function(OTU) OTU/sum(OTU))
+ps_fam_ra # 318 families and 152 samples
+otu_f = as(otu_table(ps_fam_ra), "matrix")
+taxon_f = as(tax_table(ps_fam_ra), "matrix")
+fam<-t(otu_f)
+fam <- as.data.frame(fam)
+fam <- tibble::rownames_to_column(fam, "ASV")
+taxon_f <- as.data.frame(taxon_f)
+taxon_f <- tibble::rownames_to_column(taxon_f, "ASV")
+fam_tax <- merge(fam, taxon_f, by="ASV", all=FALSE)
+fam_tax$Genus<-NULL
+fam_tax$ASV<-NULL
+fam_tax$sequence<-NULL
+# now to retrieve only the 10 families out of 318 families that I want to plot: choosing the DA families that are also in the top 25 most abundant families
+DA1 <- fam_tax %>% filter(Family =='Nitrosopumilaceae') # enriched in initial timepoint
+DA2 <- fam_tax %>% filter(Family =='Cyanobacteriaceae') # enriched in initial timepoint (DLAB)
+DA3 <- fam_tax %>% filter(Family =='Blastocatellaceae') # enriched in initial timepoint (CNAT)
+DA4 <- fam_tax %>% filter(Family =='Amoebophilaceae') # enriched in initial timepoint
+DA5 <- fam_tax %>% filter(Family =='Desulfovibrionaceae') # enriched at 2-month timpoint
+DA6 <- fam_tax %>% filter(Family =='Hyphomonadaceae') # enriched at 2-month timpoint
+DA7 <- fam_tax %>% filter(Family =='Vibrionaceae') # enriched at 2-month timpoint
+DA8 <- fam_tax %>% filter(Family =='Terasakiellaceae') # enriched at 2-month timpoint
+DA9 <- fam_tax %>% filter(Family =='Campylobacterales') # enriched at 2-month timpoint
+DA10 <- fam_tax %>% filter(Family == 'Ga0077536') # depleted at Pickles Patch / enriched at Looe Key and West Turtle (esp. CNAT)
+DA_nursery<-rbind(DA1,DA2,DA3,DA4,DA5,DA6,DA7,DA8,DA9,DA10)
+
+# Merge with metadata for plotting aesthetics
+samples <- as.data.frame(samples)
+samples <- tibble::rownames_to_column(samples, "sample")
+DA_nursery_long<-melt(DA_nursery,value.name="proportion",variable.name="sample",id.vars=c("Kingdom","Phylum","Class","Order","Family"))
+DAplot <- merge(DA_nursery_long,samples,by="sample", all=TRUE)
+unique(DAplot$Class) # 8 classes
+# [1] "Nitrososphaeria"     "Cyanobacteriia"      "Blastocatellia"      "Bacteroidia"         "Desulfovibrionia"   
+# [6] "Alphaproteobacteria" "Gammaproteobacteria" "Campylobacteria" 
+
+# separate by coral species
+DAplotC <- DAplot %>% filter(coral.species =='Colpophyllia natans')
+unique(DAplotC$Class)  
+
+DAplotD <- DAplot %>% filter(coral.species =='Diploria labyrinthiformis')
+unique(DAplotD$Class)
+
+#set colorblind friendly palette, this is muted_nine plus black and white
+cols<-c("Alphaproteobacteria"="#CC6677","Bacteroidia"="#332288","Blastocatellia"="#88CCEE","Campylobacteria"="#999933","Cyanobacteriia"="#44AA99","Desulfovibrionia"="#AA4499","Gammaproteobacteria"="#000000","Nitrososphaeria"="#F9F4EC")
+
+# set aesthetics for each coral species
+DAplotC$timepoint<-factor(DAplotC$timepoint,levels=c("Initial","2-month"))
+DAplotC$Family<-factor(DAplotC$Family,levels=c("Desulfovibrionaceae","Nitrosopumilaceae","Cyanobacteriaceae","Campylobacterales","Hyphomonadaceae","Blastocatellaceae","Terasakiellaceae","Vibrionaceae","Amoebophilaceae","Ga0077536"))
+
+# set aesthetics for each coral species
+DAplotD$timepoint<-factor(DAplotD$timepoint,levels=c("Initial","2-month"))
+DAplotD$Family<-factor(DAplotD$Family,levels=c("Desulfovibrionaceae","Nitrosopumilaceae","Cyanobacteriaceae","Campylobacterales","Hyphomonadaceae","Blastocatellaceae","Terasakiellaceae","Vibrionaceae","Amoebophilaceae","Ga0077536"))
+
+pdf("DA_families_CNAT.pdf", bg ="white", width=11)
+pc <- ggplot(DAplotC, aes(sample, Family, fill= Class))+
+  geom_point(aes(size=proportion*100),alpha=0.8,shape=21)+
+  scale_size(range = c(0,10), name="Relative abundance")+
+  scale_fill_manual(values = cols)+
+  facet_grid(.~timepoint,scales="free",space="free")+
+  theme_bw()+
+  theme(axis.text.x=element_text(angle=90))+
+  theme(axis.title.x=element_blank())+
+  theme(axis.title.y=element_blank())
+pc
+dev.off()
+
+pdf("DA_families_DLAB.pdf", bg ="white", width=11)
+pd <- ggplot(DAplotD, aes(sample, Family, fill= Class))+
+  geom_point(aes(size=proportion*100),alpha=0.8,shape=21)+
+  scale_size(range = c(0,10), name="Relative abundance")+
+  scale_fill_manual(values = cols)+
+  facet_grid(.~timepoint,scales="free",space="free")+
+  theme_bw()+
+  theme(axis.text.x=element_text(angle=90))+
+  theme(axis.title.x=element_blank())+
+  theme(axis.title.y=element_blank())
+pd
+dev.off()
+
+```
 
