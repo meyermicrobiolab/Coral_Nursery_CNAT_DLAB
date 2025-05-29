@@ -421,17 +421,15 @@ unique(famplotD$Class) # same 12 classes as above
 cols<-c("Alphaproteobacteria"="#CC6677","Bacteria"="#117733","Bacteroidia"="#332288","Blastocatellia"="#88CCEE","Campylobacteria"="#999933","Clostridia"="#882255","Cyanobacteriia"="#44AA99","Desulfobulbia"="#DDCC77","Desulfovibrionia"="#AA4499","Gammaproteobacteria"="#000000","Nitrososphaeria"="#F9F4EC","Others"="#999999")
 
 
-# set aesthetics for each coral species
+# set aesthetics for CNAT
 famplotC$timepoint<-factor(famplotC$timepoint,levels=c("Initial","2-month"))
+
 famplotC$Family<-factor(famplotC$Family,levels=c("Others","Bacteroidia","Burkholderiaceae","Rhodospirillaceae","Paraspirulinaceae","AB1","Alphaproteobacteria","Kiloniellaceae","Bacteria","Fusibacteraceae","Woeseiaceae","Endozoicomonadaceae","Desulfocapsaceae","Desulfovibrionaceae","Nitrosopumilaceae","Cyanobacteriaceae","Phormidiaceae","Campylobacterales","Hyphomonadaceae","Flavobacteriaceae","Blastocatellaceae","Paracoccaceae","Terasakiellaceae","Vibrionaceae","Amoebophilaceae","Ga0077536"))
 
 #order samples by site West to East (lower keys = Looe, middle keys = West Turtle, upper keys = Pickles)
 famplotC$sample<-factor(famplotC$sample,levels=c("CN034-1","CN034-2","CN034-3","CN034-4","CN034-5","CN034-6","CN035-1","CN035-2","CN035-3","CN035-4","CN035-5","CN035-6","CN036-3","CN036-4","CN036-5","CN036-6","CN037-1","CN037-2","CN037-3","CN037-4","CN037-5","CN037-6","CN038-1","CN038-2","CN038-3","CN038-4","CN038-5","CN038-6","CN021-1","CN021-2","CN021-3","CN021-4","CN021-5","CN021-6","CN022-1","CN022-2","CN022-4","CN022-5","CN022-6","CN026-1","CN026-3","CN026-4","CN026-5","CN026-6","CN027-1","CN027-2","CN027-3","CN027-4","CN027-5","CN027-6","CN028-1","CN028-2","CN028-3","CN028-4","CN028-5","CN028-6","CN041-2","CN041-4","CN041-5","CN041-6","CN042-4","CN042-5","CN042-6","CN043-1","CN043-4","CN043-5","CN043-6","CN044-1","CN044-4","CN044-5","CN044-6","CN045-1","CN045-4","CN045-5","CN045-6"))
-unique(famplotC$sample)
 
-famplotD$timepoint<-factor(famplotD$timepoint,levels=c("Initial","2-month"))
-famplotD$Family<-factor(famplotD$Family,levels=c("Others","Bacteroidia","Burkholderiaceae","Rhodospirillaceae","Paraspirulinaceae","AB1","Alphaproteobacteria","Kiloniellaceae","Bacteria","Fusibacteraceae","Woeseiaceae","Endozoicomonadaceae","Desulfocapsaceae","Desulfovibrionaceae","Nitrosopumilaceae","Cyanobacteriaceae","Phormidiaceae","Campylobacterales","Hyphomonadaceae","Flavobacteriaceae","Blastocatellaceae","Paracoccaceae","Terasakiellaceae","Vibrionaceae","Amoebophilaceae","Ga0077536"))
-
+# plot CNAT
 pdf("Top25families_CNAT.pdf", bg ="white", width=11)
 pc <- ggplot(famplotC, aes(sample, Family, fill= Class))+
   geom_point(aes(size=proportion*100),alpha=0.8,shape=21)+
@@ -444,6 +442,14 @@ pc <- ggplot(famplotC, aes(sample, Family, fill= Class))+
   theme(axis.title.y=element_blank())
 pc
 dev.off()
+
+# set aesthetics for DLAB
+famplotD$timepoint<-factor(famplotD$timepoint,levels=c("Initial","2-month"))
+
+famplotD$Family<-factor(famplotD$Family,levels=c("Others","Bacteroidia","Burkholderiaceae","Rhodospirillaceae","Paraspirulinaceae","AB1","Alphaproteobacteria","Kiloniellaceae","Bacteria","Fusibacteraceae","Woeseiaceae","Endozoicomonadaceae","Desulfocapsaceae","Desulfovibrionaceae","Nitrosopumilaceae","Cyanobacteriaceae","Phormidiaceae","Campylobacterales","Hyphomonadaceae","Flavobacteriaceae","Blastocatellaceae","Paracoccaceae","Terasakiellaceae","Vibrionaceae","Amoebophilaceae","Ga0077536"))
+
+#order samples by site West to East (lower keys = Looe, middle keys = West Turtle, upper keys = Pickles)
+famplotD$sample<-factor(famplotD$sample,levels=c("DL055-1","DL055-3","DL055-4","DL055-5","DL055-6","DL056-2","DL056-3","DL056-4","DL056-5","DL056-6","DL057-1","DL057-3","DL057-4","DL057-5","DL057-6","DL058-3","DL058-4","DL058-5","DL058-6","DL059-1","DL059-2","DL059-4","DL059-5","DL059-6","DL044-1","DL044-2","DL044-4","DL044-5","DL044-6","DL045-1","DL045-2","DL045-3","DL045-4","DL045-5","DL045-6","DL046-1","DL046-2","DL046-3","DL046-4","DL046-5","DL046-6","DL047-3","DL047-4","DL047-5","DL047-6","DL049-1","DL049-2","DL049-3","DL049-4","DL049-5","DL049-6","DL060-3","DL060-4","DL060-5","DL060-6","DL061-1","DL061-3","DL061-4","DL061-5","DL061-6","DL062-1","DL062-2","DL062-3","DL062-4","DL062-5","DL062-6","DL063-1","DL063-3","DL063-4","DL063-5","DL063-6","DL064-1","DL064-2","DL064-3","DL064-4","DL064-5","DL064-6"))
 
 pdf("Top25families_DLAB.pdf", bg ="white", width=11)
 pd <- ggplot(famplotD, aes(sample, Family, fill= Class))+
@@ -533,29 +539,32 @@ colony<-as.character(samples$colony)
 # permanova between groups using Aitchison distance
 dist.clr <- dist(E.clr)
 
-perm<-adonis2(dist.clr~coral.species*timepoint,as(sample_data(ps_qf),"data.frame"))
+perm<-adonis2(dist.clr~coral.species*timepoint,as(sample_data(ps_qf),"data.frame"),by = "terms")
 print(perm)
-# coral species, time, and the interaction of species and time are significant at 0.05 level, but all the R2 values are very low
+# coral species, time, and the interaction of species and time are significant at 0.05 level, but all the R2 values are very low (0.01626, 0.01444, 0.01568, respectively)
 
-perm1<-adonis2(dist.clr~colony*timepoint,as(sample_data(ps_qf),"data.frame"))
+perm1<-adonis2(dist.clr~colony*timepoint,as(sample_data(ps_qf),"data.frame"),by = "terms")
 print(perm1) 
-# interaction of colony and time is significant at 0.05 level, R2 = 0.22632
+# only the interaction of colony and time is significant at 0.05 level, R2 = 0.22632
 
-perm1a<-adonis2(dist.clr~colony,as(sample_data(ps_qf),"data.frame"))
+perm1a<-adonis2(dist.clr~colony,as(sample_data(ps_qf),"data.frame"),by = "terms")
 print(perm1a) # colony: not significant
 
-perm2<-pairwise.adonis2(dist.clr~site/coral.species,as(sample_data(ps_qf),"data.frame"), strata='coral.species')
+perm1b<-adonis2(dist.clr~site*timepoint,as(sample_data(ps_qf),"data.frame"),by = "terms")
+print(perm1b) # nothing significant
+
+perm2<-pairwise.adonis2(dist.clr~site/coral.species,as(sample_data(ps_qf),"data.frame"), strata='coral.species', by="terms")
 print(perm2)
 # interaction of site and coral species significant only between LK and Pickles at 0.05 level
 
-perm3<-pairwise.adonis2(dist.clr~timepoint/colony,as(sample_data(ps_qf),"data.frame"), strata='colony')
+perm3<-pairwise.adonis2(dist.clr~timepoint/colony,as(sample_data(ps_qf),"data.frame"), strata='colony', by="terms")
 print(perm3)
 # time, controlling for colony is significant at 0.05 level, R2 = 0.01422; interaction of time and colony sign. at 0.05 level, R2 = 0.43672
 
-perm4<-pairwise.adonis2(dist.clr~site/coral.species,as(sample_data(ps_qf),"data.frame"), strata='coral.species')
+perm4<-pairwise.adonis2(dist.clr~site/coral.species,as(sample_data(ps_qf),"data.frame"), strata='coral.species', by="terms")
 print(perm4) # site, controlling for coral species = not significant
 
-perm5<-pairwise.adonis2(dist.clr~time/coral.species,as(sample_data(ps_qf),"data.frame"), strata='coral.species')
+perm5<-pairwise.adonis2(dist.clr~time/coral.species,as(sample_data(ps_qf),"data.frame"), strata='coral.species', by="terms")
 print(perm5) # time, controlling for coral species is significant at 0.05 level, R2 = 0.01422; interaction of time and coral species sign. at 0.05 level, R2 = 0.03216
 
 ```
