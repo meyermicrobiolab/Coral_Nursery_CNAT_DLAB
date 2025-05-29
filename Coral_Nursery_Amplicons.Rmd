@@ -958,7 +958,7 @@ write.table(df, "DA-Families_site_controlling-coral-species.txt", sep="\t",row.n
 
 ```
 
-# Create a bubble plot with DA families in the top 25
+# Create a bubble plot with select common or DA families in the top 25 - this is an abbreviated figure for presentation
 
 
 ```{r, echo=FALSE}
@@ -993,7 +993,7 @@ fam_tax <- merge(fam, taxon_f, by="ASV", all=FALSE)
 fam_tax$Genus<-NULL
 fam_tax$ASV<-NULL
 fam_tax$sequence<-NULL
-# now to retrieve only the 10 families out of 318 families that I want to plot: choosing the DA families that are also in the top 25 most abundant families
+# now to retrieve only the 12 families out of 318 families that I want to plot: choosing the DA families that are also in the top 25 most abundant families
 DA1 <- fam_tax %>% filter(Family =='Nitrosopumilaceae') # enriched in initial timepoint
 DA2 <- fam_tax %>% filter(Family =='Cyanobacteriaceae') # enriched in initial timepoint (DLAB)
 DA3 <- fam_tax %>% filter(Family =='Blastocatellaceae') # enriched in initial timepoint (CNAT)
@@ -1004,13 +1004,20 @@ DA7 <- fam_tax %>% filter(Family =='Vibrionaceae') # enriched at 2-month timpoin
 DA8 <- fam_tax %>% filter(Family =='Terasakiellaceae') # enriched at 2-month timpoint
 DA9 <- fam_tax %>% filter(Family =='Campylobacterales') # enriched at 2-month timpoint
 DA10 <- fam_tax %>% filter(Family == 'Ga0077536') # depleted at Pickles Patch / enriched at Looe Key and West Turtle (esp. CNAT)
-DA_nursery<-rbind(DA1,DA2,DA3,DA4,DA5,DA6,DA7,DA8,DA9,DA10)
+DA11 <- fam_tax %>% filter(Family == 'Paracoccaceae') # common
+DA12 <- fam_tax %>% filter(Family == 'Phormidiaceae') # tied to anaerobes? 
+DA_nursery<-rbind(DA1,DA2,DA3,DA4,DA5,DA6,DA7,DA8,DA9,DA10,DA11,DA12)
 
 # Merge with metadata for plotting aesthetics
 samples <- as.data.frame(samples)
 samples <- tibble::rownames_to_column(samples, "sample")
 DA_nursery_long<-melt(DA_nursery,value.name="proportion",variable.name="sample",id.vars=c("Kingdom","Phylum","Class","Order","Family"))
 DAplot <- merge(DA_nursery_long,samples,by="sample", all=TRUE)
+unique(DAplot$Family) # 12 families
+# [1] "Nitrosopumilaceae"   "Cyanobacteriaceae"   "Blastocatellaceae"   "Amoebophilaceae"     "Desulfovibrionaceae"
+# [6] "Hyphomonadaceae"     "Vibrionaceae"        "Terasakiellaceae"    "Campylobacterales"   "Ga0077536"          
+# [11] "Paracoccaceae"       "Phormidiaceae" 
+
 unique(DAplot$Class) # 8 classes
 # [1] "Nitrososphaeria"     "Cyanobacteriia"      "Blastocatellia"      "Bacteroidia"         "Desulfovibrionia"   
 # [6] "Alphaproteobacteria" "Gammaproteobacteria" "Campylobacteria" 
@@ -1027,11 +1034,16 @@ cols<-c("Alphaproteobacteria"="#CC6677","Bacteroidia"="#332288","Blastocatellia"
 
 # set aesthetics for each coral species
 DAplotC$timepoint<-factor(DAplotC$timepoint,levels=c("Initial","2-month"))
-DAplotC$Family<-factor(DAplotC$Family,levels=c("Desulfovibrionaceae","Nitrosopumilaceae","Cyanobacteriaceae","Campylobacterales","Hyphomonadaceae","Blastocatellaceae","Terasakiellaceae","Vibrionaceae","Amoebophilaceae","Ga0077536"))
+DAplotC$Family<-factor(DAplotC$Family,levels=c("Desulfovibrionaceae","Nitrosopumilaceae","Cyanobacteriaceae","Phormidiaceae","Campylobacterales","Hyphomonadaceae","Blastocatellaceae","Paracoccaceae","Terasakiellaceae","Vibrionaceae","Amoebophilaceae","Ga0077536"))
+#order samples by site West to East (lower keys = Looe, middle keys = West Turtle, upper keys = Pickles)
+DAplotC$sample<-factor(DAplotC$sample,levels=c("CN034-1","CN034-2","CN034-3","CN034-4","CN034-5","CN034-6","CN035-1","CN035-2","CN035-3","CN035-4","CN035-5","CN035-6","CN036-3","CN036-4","CN036-5","CN036-6","CN037-1","CN037-2","CN037-3","CN037-4","CN037-5","CN037-6","CN038-1","CN038-2","CN038-3","CN038-4","CN038-5","CN038-6","CN021-1","CN021-2","CN021-3","CN021-4","CN021-5","CN021-6","CN022-1","CN022-2","CN022-4","CN022-5","CN022-6","CN026-1","CN026-3","CN026-4","CN026-5","CN026-6","CN027-1","CN027-2","CN027-3","CN027-4","CN027-5","CN027-6","CN028-1","CN028-2","CN028-3","CN028-4","CN028-5","CN028-6","CN041-2","CN041-4","CN041-5","CN041-6","CN042-4","CN042-5","CN042-6","CN043-1","CN043-4","CN043-5","CN043-6","CN044-1","CN044-4","CN044-5","CN044-6","CN045-1","CN045-4","CN045-5","CN045-6"))
 
 # set aesthetics for each coral species
 DAplotD$timepoint<-factor(DAplotD$timepoint,levels=c("Initial","2-month"))
-DAplotD$Family<-factor(DAplotD$Family,levels=c("Desulfovibrionaceae","Nitrosopumilaceae","Cyanobacteriaceae","Campylobacterales","Hyphomonadaceae","Blastocatellaceae","Terasakiellaceae","Vibrionaceae","Amoebophilaceae","Ga0077536"))
+DAplotD$Family<-factor(DAplotD$Family,levels=c("Desulfovibrionaceae","Nitrosopumilaceae","Cyanobacteriaceae","Phormidiaceae","Campylobacterales","Hyphomonadaceae","Blastocatellaceae","Paracoccaceae","Terasakiellaceae","Vibrionaceae","Amoebophilaceae","Ga0077536"))
+#order samples by site West to East (lower keys = Looe, middle keys = West Turtle, upper keys = Pickles)
+DAplotD$sample<-factor(DAplotD$sample,levels=c("DL055-1","DL055-3","DL055-4","DL055-5","DL055-6","DL056-2","DL056-3","DL056-4","DL056-5","DL056-6","DL057-1","DL057-3","DL057-4","DL057-5","DL057-6","DL058-3","DL058-4","DL058-5","DL058-6","DL059-1","DL059-2","DL059-4","DL059-5","DL059-6","DL044-1","DL044-2","DL044-4","DL044-5","DL044-6","DL045-1","DL045-2","DL045-3","DL045-4","DL045-5","DL045-6","DL046-1","DL046-2","DL046-3","DL046-4","DL046-5","DL046-6","DL047-3","DL047-4","DL047-5","DL047-6","DL049-1","DL049-2","DL049-3","DL049-4","DL049-5","DL049-6","DL060-3","DL060-4","DL060-5","DL060-6","DL061-1","DL061-3","DL061-4","DL061-5","DL061-6","DL062-1","DL062-2","DL062-3","DL062-4","DL062-5","DL062-6","DL063-1","DL063-3","DL063-4","DL063-5","DL063-6","DL064-1","DL064-2","DL064-3","DL064-4","DL064-5","DL064-6"))
+
 
 pdf("DA_families_CNAT.pdf", bg ="white", width=11)
 pc <- ggplot(DAplotC, aes(sample, Family, fill= Class))+
